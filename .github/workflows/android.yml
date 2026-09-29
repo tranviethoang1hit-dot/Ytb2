@@ -169,6 +169,22 @@ jobs:
                     print('Patched Error 153 in YouTubePlayerActivity.kt:', f)
             except Exception as e:
                 print('Error patching Error 153', f, e)
+
+        # 8. Ensure supportsPictureInPicture in AndroidManifest.xml
+        for f in glob.glob('**/AndroidManifest.xml', recursive=True):
+            try:
+                with open(f, 'r', encoding='utf-8') as fp:
+                    c = fp.read()
+                if 'YouTubePlayerActivity' in c and 'supportsPictureInPicture' not in c:
+                    c = c.replace(
+                        'android:name=\".YouTubePlayerActivity\"',
+                        'android:name=\".YouTubePlayerActivity\"\n            android:supportsPictureInPicture=\"true\"\n            android:resizeableActivity=\"true\"\n            android:configChanges=\"orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden\"'
+                    )
+                    with open(f, 'w', encoding='utf-8') as fp:
+                        fp.write(c)
+                    print('Added PiP support to AndroidManifest.xml:', f)
+            except Exception as e:
+                print('Error adding PiP to manifest', f, e)
         "
         echo "Auto-patch completed."
 

@@ -34,7 +34,9 @@
         <activity
             android:name=".YouTubePlayerActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden" />
 
         <!-- Media3 foreground service for direct/local media playback. -->
         <service
