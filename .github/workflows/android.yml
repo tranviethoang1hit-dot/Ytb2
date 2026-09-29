@@ -108,7 +108,6 @@ jobs:
             try:
                 with open(f, 'r', encoding='utf-8') as fp:
                     content = fp.read()
-                # Replace round first to avoid ic_launcher_round prefix bug
                 content = content.replace('drawable/ic_launcher_foreground_round', 'drawable/ic_launcher_foreground')
                 content = content.replace('@mipmap/ic_launcher_round', '@drawable/ic_launcher_foreground')
                 content = content.replace('@mipmap/ic_launcher', '@drawable/ic_launcher_foreground')
@@ -118,7 +117,6 @@ jobs:
             except Exception as e:
                 print('Error patching', f, e)
 
-        # Ensure both ic_launcher_foreground and round copy exist in all drawable folders
         for d in glob.glob('**/res/drawable*', recursive=True):
             fg = os.path.join(d, 'ic_launcher_foreground.xml')
             fg_round = os.path.join(d, 'ic_launcher_foreground_round.xml')
@@ -142,11 +140,16 @@ jobs:
             except Exception as e:
                 print('Error patching PlayerViewModel', f, e)
 
-        # 7. Fix YouTube Error 153 in YouTubePlayerActivity.kt
+        # 7. Fix YouTube Background and Error 153 in YouTubePlayerActivity.kt
         for f in glob.glob('**/YouTubePlayerActivity.kt', recursive=True):
             try:
                 with open(f, 'r', encoding='utf-8') as fp:
                     content = fp.read()
+                if 'userAgentString' not in content:
+                    content = content.replace(
+                        'settings.mediaPlaybackRequiresUserGesture = false',
+                        'settings.mediaPlaybackRequiresUserGesture = false\n                                    settings.userAgentString = \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36\"'
+                    )
                 old_load = 'loadUrl(\"https://www.youtube.com/embed/\$videoId?autoplay=1&playsinline=1&rel=0\")'
                 if old_load in content:
                     new_embed = '''val embedHtml = \"\"\"
@@ -164,11 +167,11 @@ jobs:
                                     \"\"\".trimIndent()
                                     loadDataWithBaseURL(\"https://www.youtube-nocookie.com\", embedHtml, \"text/html\", \"utf-8\", null)'''
                     content = content.replace(old_load, new_embed)
-                    with open(f, 'w', encoding='utf-8') as fp:
-                        fp.write(content)
-                    print('Patched Error 153 in YouTubePlayerActivity.kt:', f)
+                with open(f, 'w', encoding='utf-8') as fp:
+                    fp.write(content)
+                print('Patched YouTubePlayerActivity.kt:', f)
             except Exception as e:
-                print('Error patching Error 153', f, e)
+                print('Error patching YouTubePlayerActivity', f, e)
 
         # 8. Ensure supportsPictureInPicture in AndroidManifest.xml
         for f in glob.glob('**/AndroidManifest.xml', recursive=True):
@@ -185,6 +188,19 @@ jobs:
                     print('Added PiP support to AndroidManifest.xml:', f)
             except Exception as e:
                 print('Error adding PiP to manifest', f, e)
+
+        # 9. Fix MainScreen.kt syntax issues
+        for f in glob.glob('**/MainScreen.kt', recursive=True):
+            try:
+                with open(f, 'r', encoding='utf-8') as fp:
+                    c = fp.read()
+                if 'fun MainScreen(viewModel: PlayerViewModel' in c and 'fun MainScreen(viewModel: PlayerViewModel)' not in c:
+                    c = c.replace('fun MainScreen(viewModel: PlayerViewModel', 'fun MainScreen(viewModel: PlayerViewModel)')
+                    with open(f, 'w', encoding='utf-8') as fp:
+                        fp.write(c)
+                    print('Fixed parameter parenthesis in MainScreen.kt:', f)
+            except Exception as e:
+                print('Error patching MainScreen.kt', f, e)
         "
         echo "Auto-patch completed."
 
