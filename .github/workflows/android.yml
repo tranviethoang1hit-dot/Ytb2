@@ -34,7 +34,7 @@ jobs:
         python3 -c "
         import os, glob, shutil
 
-        # 1. Fix BottomPlayerBar.kt type mismatch (progress = { progress } -> progress = progress)
+        # 1. Fix BottomPlayerBar.kt type mismatch
         for f in glob.glob('**/BottomPlayerBar.kt', recursive=True):
             try:
                 with open(f, 'r', encoding='utf-8') as fp:
@@ -103,7 +103,7 @@ jobs:
                 except Exception as e:
                     print('Error patching', f, e)
 
-        # 5. Fix AndroidManifest.xml icons and ensure both drawables exist
+        # 5. Fix AndroidManifest.xml icons
         for f in glob.glob('**/AndroidManifest.xml', recursive=True):
             try:
                 with open(f, 'r', encoding='utf-8') as fp:
