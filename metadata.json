@@ -1,0 +1,7 @@
+{
+  "name": "YouTube Background Player",
+  "description": "Ứng dụng nghe nhạc và xem video YouTube không quảng cáo với tính năng phát trong nền, Picture-in-Picture, chế độ chỉ nghe âm thanh và hẹn giờ tắt.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

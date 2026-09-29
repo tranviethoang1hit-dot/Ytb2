@@ -1,0 +1,4 @@
+# Copy this file to local.properties and set the key if you want live
+# YouTube Data API search. The app still runs with curated offline data
+# when the key is empty.
+YOUTUBE_API_KEY=YOUR_YOUTUBE_DATA_API_V3_KEY
