@@ -135,6 +135,7 @@ fun MainScreen(viewModel: PlayerViewModel) {
                         }
                     }
                 }
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
