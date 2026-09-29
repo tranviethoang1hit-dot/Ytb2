@@ -35,6 +35,8 @@ import com.example.ytmusicplayer.ui.theme.YTMusicPlayerTheme
 class YouTubePlayerActivity : ComponentActivity() {
     private val videoId: String by lazy { intent.getStringExtra(EXTRA_VIDEO_ID).orEmpty() }
     private val title: String by lazy { intent.getStringExtra(EXTRA_TITLE).orEmpty() }
+    private var audioManager: android.media.AudioManager? = null
+    private var audioFocusRequest: android.media.AudioFocusRequest? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var webView: WebView? = null
 
@@ -61,7 +63,32 @@ class YouTubePlayerActivity : ComponentActivity() {
             // Safe fallback
         }
 
-        // 2. Start Foreground Service so Android never kills or pauses background audio
+        // 2. Request System AudioFocus to ensure background audio is never paused by OS
+        try {
+            audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val playbackAttributes = android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+                val focusReq = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(playbackAttributes)
+                    .setAcceptsDelayedFocusGain(true)
+                    .setOnAudioFocusChangeListener { }
+                    .build()
+                audioFocusRequest = focusReq
+                audioManager?.requestAudioFocus(focusReq)
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager?.requestAudioFocus(
+                    null,
+                    android.media.AudioManager.STREAM_MUSIC,
+                    android.media.AudioManager.AUDIOFOCUS_GAIN
+                )
+            }
+        } catch (e: Exception) {}
+
+        // 3. Start Foreground Service so Android never kills or pauses background audio
         try {
             val serviceIntent = Intent(this, BackgroundAudioService::class.java).apply {
                 action = BackgroundAudioService.ACTION_PLAY_YOUTUBE
@@ -253,6 +280,15 @@ class YouTubePlayerActivity : ComponentActivity() {
                 action = BackgroundAudioService.ACTION_STOP
             }
             startService(stopIntent)
+        } catch (e: Exception) {}
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                audioFocusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager?.abandonAudioFocus(null)
+            }
         } catch (e: Exception) {}
 
         webView?.destroy()

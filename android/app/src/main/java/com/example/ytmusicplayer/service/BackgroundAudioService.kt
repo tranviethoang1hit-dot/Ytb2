@@ -5,6 +5,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -25,21 +28,32 @@ import com.example.ytmusicplayer.YouTubePlayerActivity
 class BackgroundAudioService : MediaSessionService() {
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
+    private var audioManager: AudioManager? = null
+    private var audioFocusRequest: AudioFocusRequest? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        requestServiceAudioFocus()
 
-        val exoPlayer = ExoPlayer.Builder(this).build().apply {
-            setHandleAudioBecomingNoisy(true)
-            addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_IDLE) {
-                        stopForeground(STOP_FOREGROUND_DETACH)
+        val audioAttributes = androidx.media3.common.AudioAttributes.Builder()
+            .setUsage(androidx.media3.common.C.USAGE_MEDIA)
+            .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC)
+            .build()
+
+        val exoPlayer = ExoPlayer.Builder(this)
+            .setAudioAttributes(audioAttributes, true)
+            .setWakeMode(androidx.media3.common.C.WAKE_MODE_NETWORK)
+            .build().apply {
+                setHandleAudioBecomingNoisy(true)
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        if (playbackState == Player.STATE_IDLE) {
+                            stopForeground(STOP_FOREGROUND_DETACH)
+                        }
                     }
-                }
-            })
-        }
+                })
+            }
         player = exoPlayer
 
         val sessionActivity = PendingIntent.getActivity(
@@ -54,14 +68,54 @@ class BackgroundAudioService : MediaSessionService() {
             .build()
     }
 
+    private fun requestServiceAudioFocus() {
+        try {
+            audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val playbackAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+                val focusReq = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(playbackAttributes)
+                    .setAcceptsDelayedFocusGain(true)
+                    .setWillPauseWhenDucked(false)
+                    .setOnAudioFocusChangeListener { }
+                    .build()
+                audioFocusRequest = focusReq
+                audioManager?.requestAudioFocus(focusReq)
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager?.requestAudioFocus(
+                    null,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN
+                )
+            }
+        } catch (e: Exception) {}
+    }
+
+    private fun releaseServiceAudioFocus() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                audioFocusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager?.abandonAudioFocus(null)
+            }
+        } catch (e: Exception) {}
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_PLAY_YOUTUBE -> {
+                requestServiceAudioFocus()
                 val title = intent.getStringExtra(EXTRA_TITLE).orEmpty().ifBlank { "YouTube Music" }
                 val videoId = intent.getStringExtra(EXTRA_VIDEO_ID).orEmpty()
                 showForegroundNotification(title, videoId)
             }
             ACTION_STOP -> {
+                releaseServiceAudioFocus()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
