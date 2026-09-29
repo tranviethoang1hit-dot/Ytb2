@@ -1,6 +1,7 @@
 import { VideoItem } from '../types';
 import { formatTime } from './formatters';
 import { getReliableThumbnail } from '../data/mockVideos';
+import { backgroundAudioService } from './backgroundAudioService';
 
 let pipVideoElement: HTMLVideoElement | null = null;
 let pipCanvasElement: HTMLCanvasElement | null = null;
@@ -91,7 +92,8 @@ function ensureCanvasAndVideo(onLeave?: () => void) {
   if (!pipVideoElement) {
     pipVideoElement = document.createElement('video');
     pipVideoElement.autoplay = true;
-    pipVideoElement.muted = true;
+    pipVideoElement.muted = false;
+    pipVideoElement.volume = 0.05;
     pipVideoElement.playsInline = true;
 
     // Enable native Chromium Auto Picture-in-Picture
@@ -239,8 +241,13 @@ export async function preparePiPCarrier(
 
   try {
     if (!elements.video.srcObject && (elements.canvas as any).captureStream) {
-      const stream = (elements.canvas as any).captureStream(30);
+      const canvasStream = (elements.canvas as any).captureStream(30);
+      const audioTracks = backgroundAudioService.getAudioTrack();
+      const combinedTracks = [...canvasStream.getVideoTracks(), ...audioTracks];
+      const stream = new MediaStream(combinedTracks);
       elements.video.srcObject = stream;
+      elements.video.muted = false;
+      elements.video.volume = 0.05;
       await elements.video.play();
     }
     return true;
@@ -270,8 +277,13 @@ export async function enterNativePictureInPicture(
 
   try {
     if (!elements.video.srcObject && (elements.canvas as any).captureStream) {
-      const stream = (elements.canvas as any).captureStream(30);
+      const canvasStream = (elements.canvas as any).captureStream(30);
+      const audioTracks = backgroundAudioService.getAudioTrack();
+      const combinedTracks = [...canvasStream.getVideoTracks(), ...audioTracks];
+      const stream = new MediaStream(combinedTracks);
       elements.video.srcObject = stream;
+      elements.video.muted = false;
+      elements.video.volume = 0.05;
       await elements.video.play();
     }
 

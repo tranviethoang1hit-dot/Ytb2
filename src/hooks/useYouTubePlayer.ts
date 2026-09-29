@@ -31,9 +31,9 @@ export function useYouTubePlayer() {
   const [isPiP, setIsPiP] = useState(false);
   const [isNativePiP, setIsNativePiP] = useState(false);
   const [isAutoPiPEnabled, setIsAutoPiPEnabled] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') return true;
     const saved = localStorage.getItem('yt_auto_pip');
-    return saved !== null ? saved === 'true' : false;
+    return saved !== null ? saved === 'true' : true;
   });
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
@@ -332,10 +332,8 @@ export function useYouTubePlayer() {
             if (event.data === 1) {
               setIsPlaying(true);
             } else if (event.data === 2) {
-              // If document is hidden, the browser or OS might have artificially paused YouTube iframe
-              if (!document.hidden) {
-                setIsPlaying(false);
-              }
+              // Accurately reflect paused state so lock screen displays Play (▶) button
+              setIsPlaying(false);
             } else if (event.data === 0) {
               // Ended
               if (sleepTimerMode === 'end_of_track') {

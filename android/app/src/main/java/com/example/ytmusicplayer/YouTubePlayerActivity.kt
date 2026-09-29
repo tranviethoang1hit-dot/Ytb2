@@ -129,6 +129,7 @@ class YouTubePlayerActivity : ComponentActivity() {
                                     settings.javaScriptEnabled = true
                                     settings.domStorageEnabled = true
                                     settings.mediaPlaybackRequiresUserGesture = false
+                                    settings.userAgentString = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                                     settings.cacheMode = WebSettings.LOAD_DEFAULT
                                     settings.loadWithOverviewMode = true
                                     settings.useWideViewPort = true
@@ -228,12 +229,16 @@ class YouTubePlayerActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        // Do NOT call webView.onPause() - allows audio to keep playing uninterrupted in background
+        try {
+            webView?.resumeTimers()
+        } catch (e: Exception) {}
     }
 
     override fun onStop() {
         super.onStop()
-        // Do NOT destroy or pause webView - allows audio to keep playing when screen is locked
+        try {
+            webView?.resumeTimers()
+        } catch (e: Exception) {}
     }
 
     override fun onDestroy() {

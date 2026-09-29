@@ -96,22 +96,41 @@ class BackgroundAudioService {
     window.addEventListener('keydown', unlockHandler, { capture: true, passive: true });
   }
 
+  private audioStreamDestination: MediaStreamAudioDestinationNode | null = null;
+
+  public getAudioTrack(): MediaStreamTrack[] {
+    if (this.audioStreamDestination && this.audioStreamDestination.stream) {
+      return this.audioStreamDestination.stream.getAudioTracks();
+    }
+    return [];
+  }
+
   /**
-   * Unlock Web Audio context and silent audio element
+   * Unlock Web Audio context and silent element on user interaction
    */
   public unlockAudio() {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx && !this.audioContext) {
         this.audioContext = new AudioCtx();
-        // Create an inaudible carrier oscillator to keep mobile audio session alive
+        this.audioStreamDestination = this.audioContext.createMediaStreamDestination();
+
+        // Create an inaudible 20Hz carrier tone connected to both speaker and MediaStream
         const osc = this.audioContext.createOscillator();
         const gain = this.audioContext.createGain();
-        gain.gain.value = 0.00001; // completely inaudible
+        gain.gain.value = 0.0001; // completely imperceptible
         osc.frequency.value = 20;
         osc.connect(gain);
         gain.connect(this.audioContext.destination);
+        gain.connect(this.audioStreamDestination);
         osc.start();
+
+        // Attach stream to audio element if available
+        if (this.silentAudio && this.audioStreamDestination.stream) {
+          try {
+            this.silentAudio.srcObject = this.audioStreamDestination.stream;
+          } catch {}
+        }
       }
       if (this.audioContext && this.audioContext.state === 'suspended') {
         this.audioContext.resume().catch(() => {});
@@ -136,7 +155,7 @@ class BackgroundAudioService {
       this.blobUrl = URL.createObjectURL(blob);
       const audio = new Audio(this.blobUrl);
       audio.loop = true;
-      audio.volume = 0.01; // minimal non-zero volume for mobile AudioManager
+      audio.volume = 0.05; // minimal non-zero volume for mobile AudioManager
       audio.preload = 'auto';
       audio.setAttribute('playsinline', 'true');
       audio.setAttribute('webkit-playsinline', 'true');

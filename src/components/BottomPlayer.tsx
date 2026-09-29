@@ -336,22 +336,20 @@ export function BottomPlayer({
             onClick={onToggleNativePiP || onTogglePiP}
             title={
               isAutoPiPEnabled
-                ? 'Picture-in-Picture (Tự động mở khi ra ngoài ứng dụng: BẬT)'
-                : 'Mở cửa sổ Picture-in-Picture ngoài ứng dụng'
+                ? 'Cửa sổ nổi PiP (Tự động mở khi ra ngoài ứng dụng: BẬT)'
+                : 'Mở cửa sổ Picture-in-Picture để vừa nghe vừa dùng app khác'
             }
-            className={`p-2 rounded-xl transition-colors hidden md:block relative ${
+            className={`p-2 rounded-xl transition-colors flex items-center relative ${
               isNativePiP
-                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                ? 'bg-blue-600/30 text-blue-400 border border-blue-500/50 shadow-sm'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
           >
             <PictureInPicture className="w-4 h-4" />
-            {isAutoPiPEnabled && (
-              <span
-                className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400 shadow"
-                title="Tự động mở PiP khi ra ngoài ứng dụng"
-              />
-            )}
+            <span
+              className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400 shadow animate-pulse"
+              title="Cửa sổ nổi PiP sẵn sàng khi thoát app"
+            />
           </button>
 
           {/* Volume */}
