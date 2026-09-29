@@ -189,16 +189,28 @@ jobs:
             except Exception as e:
                 print('Error adding PiP to manifest', f, e)
 
-        # 9. Fix MainScreen.kt syntax issues
+        # 9. Fix MainScreen.kt syntax issues and bottomBar Column missing brace
         for f in glob.glob('**/MainScreen.kt', recursive=True):
             try:
                 with open(f, 'r', encoding='utf-8') as fp:
                     c = fp.read()
+                broken_block = '''                    }
+                }
+        },
+        containerColor = MaterialTheme.colorScheme.background'''
+                fixed_block = '''                    }
+                }
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background'''
+                if broken_block in c:
+                    c = c.replace(broken_block, fixed_block)
+                    print('Fixed missing brace in MainScreen.kt bottomBar Column:', f)
                 if 'fun MainScreen(viewModel: PlayerViewModel' in c and 'fun MainScreen(viewModel: PlayerViewModel)' not in c:
                     c = c.replace('fun MainScreen(viewModel: PlayerViewModel', 'fun MainScreen(viewModel: PlayerViewModel)')
-                    with open(f, 'w', encoding='utf-8') as fp:
-                        fp.write(c)
-                    print('Fixed parameter parenthesis in MainScreen.kt:', f)
+                with open(f, 'w', encoding='utf-8') as fp:
+                    fp.write(c)
+                print('Patched MainScreen.kt:', f)
             except Exception as e:
                 print('Error patching MainScreen.kt', f, e)
         "
